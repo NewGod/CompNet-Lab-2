@@ -1,22 +1,21 @@
+#ifndef __DEVICE_H__
+#define __DEVICE_H__
 /** 
  * @file device.h
  * @brief Library supporting network device management.
  */
-#ifndef __DEVICE_H__
-#define __DEVICE_H__
-#include<stdlib.h>
-#include<string.h>
-#include<netinet/ip.h>
-#include<net/ethernet.h>
-typedef struct Dev{ 
-	const char *name;
-	int id;
-	in_addr_t ip; 
-	struct ether_addr mac;
-	struct Dev* nxt;
-}Dev ;
-Dev *device_list;
-int dev_cnt;
+#include "protocol.h"
+
+#include <string>
+#include <functional>
+
+struct Device {
+    std::string name;
+    int id;
+    in_addr ip;
+    eth_addr eth;
+    Device(const std::string &name);
+};
 
 /**
  * Add a device to the library for sending/receiving packets. 
@@ -24,7 +23,7 @@ int dev_cnt;
  * @param device Name of network device to send/receive packet on.
  * @return An non-negative _device-ID_ on success, -1 on error.
  */
-int addDevice(const char* device);
+int addDevice(const std::string &name);
 
 /**
  * Find a device added by `addDevice`.
@@ -33,31 +32,10 @@ int addDevice(const char* device);
  * @return An non-negative _device-ID_ on success, -1 if no such device 
  * was found.
  */
-int findDevice(const char* device);
+Device *findDevice(const std::string &name);
 
-struct Dev* getDevice(int x);
+Device *getDevice(int id);
 
-int addDevice(const char* device) { 
-	if (findDevice(device) != -1) return -1;
-	Dev *d = (struct Dev*) malloc(sizeof(Dev));
-	d->name = device;
-	d->id = ++dev_cnt;
-	d->nxt = device_list;
-	device_list = d;
-	return d->id;
-}
+void eachDevice(const std::function<void(Device*)> &callback);
 
-int findDevice(const char* device) {
-	for (struct Dev* i = device_list; i; i = i->nxt) 
-		if (strcmp(device, i->name)) 
-			return i->id;
-	return -1;
-}
-
-struct Dev* getDevice(int x) {
-	for (struct Dev* i = device_list; i; i = i->nxt) 
-		if (i->id == x) 
-			return i;
-	return NULL;
-}
 #endif

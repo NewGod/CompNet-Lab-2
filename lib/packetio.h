@@ -1,17 +1,11 @@
+#ifndef __PACKETIO_H__
+#define __PACKETIO_H__
 /** 
  * @file packetio.h
  * @brief Library supporting sending/receiving Ethernet II frames.
  */
 
-#ifndef __PACKETIO_H__
-#define __PACKETIO_H__
 #include <netinet/ether.h>
-#include <net/ethernet.h>
-#include <stdint.h>
-#include <stdio.h>
-//#include <libpcap.h>
-#define ETH_TYPE_IPV4 0x0800
-#define ETH_TYPE_ARP 0x0806
 
 /** 
  * @brief Encapsule some data into an Ethernet II frame and send it.
@@ -48,5 +42,4 @@ typedef int (*frameReceiveCallback)(const void*, int, int);
  * @see frameReceiveCallback
  */
 int setFrameReceiveCallback(frameReceiveCallback callback);
-
 #endif

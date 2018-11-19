@@ -1,27 +1,52 @@
+#ifndef __PACKETIO_H__
+#define __PACKETIO_H__
 /** 
  * @file ip.h
  * @brief Library supporting sending/receiving IP packets encapsuled in an 
  * Ethernet II frame.
  */
-#ifndef __IP_H__
-#define __IP_H__
+#include "protocol.h"
+#include "device.h"
+#include "list"
+#include <unordered_map>
+struct Destination{
+	in_addr ip;
+	eth_addr mac;
+    Device *dev;
+    Destination(const in_addr &ip, const eth_addr &mac, Device *dev):
+    ip(ip), mac(mac), dev(dev) {}
+};
+std::list<Destination> list;
 
-#include <netinet/ip.h>
-#include <net/ethernet.h>
-
-typedef struct Destination{
-	struct in_addr ip;
-	struct ether_addr mac;
-	struct Destination* nxt;
-} Destination;
-struct Destination* dest_list;
-const struct Destination broadcast_addr = (Destination){
-	(struct in_addr){0xffffffff},
-	(struct ether_addr){{0xff,0xff,0xff,0xff,0xff,0xff}},
+const Destination broadcast_addr = {
+	{0xffffffff},
+	{"\xff\xff\xff\xff\xff\xff"},
 	0
 };
 
+std::unordered_map<uint32_t, std::pair<Device, eth_addr> > mactable;
 
+struct RouteTableItem{
+    uint32_t ip;
+    uint32_t ip_mask;
+    uint32_t nxet;
+};
+
+const in_addr &GetRouteTableItem(in_addr ip);
+
+/**
+ * @brief Manully add an item to routing table. Useful when talking with real 
+ * Linux machines.
+ * 
+ * @param dest The destination IP prefix.
+ * @param mask The subnet mask of the destination IP prefix.
+ * @param nextHopMAC MAC address of the next hop.
+ * @param device Name of device to send packets on.
+ * @return 0 on success, -1 on error
+ */
+
+int setRoutingTable(const struct in_addr dest, const struct in_addr mask, 
+    const void* nextHopMAC, const char *device);
 
 /**
  * @brief Send an IP packet to specified host. 
@@ -56,16 +81,4 @@ typedef int (*IPPacketReceiveCallback)(const void* buf, int len);
  */
 int setIPPacketReceiveCallback(IPPacketReceiveCallback callback);
 
-/**
- * @brief Manully add an item to routing table. Useful when talking with real 
- * Linux machines.
- * 
- * @param dest The destination IP prefix.
- * @param mask The subnet mask of the destination IP prefix.
- * @param nextHopMAC MAC address of the next hop.
- * @param device Name of device to send packets on.
- * @return 0 on success, -1 on error
- */
-int setRoutingTable(const struct in_addr dest, const struct in_addr mask, 
-    const void* nextHopMAC, const char *device);
 #endif
