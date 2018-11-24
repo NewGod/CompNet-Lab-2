@@ -7,6 +7,15 @@
 #include <sys/socket.h>
 #include <netdb.h>
 
+class Socket{
+    public: 
+    Socket();
+    ~Socket();
+    int blind(const struct sockaddr *address, socklen_t address_len);
+    int listen(int backlog);
+    int connect(const struct sockaddr *address, socklen_t address_len);
+    int accept(struct sockaddr *address, socklen_t *address_len);
+};
 /**
  * @see [POSIX.1-2017:socket](http://pubs.opengroup.org/onlinepubs/
  * 9699919799/functions/socket.html)

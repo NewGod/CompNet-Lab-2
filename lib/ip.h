@@ -7,8 +7,22 @@
  */
 #include "protocol.h"
 #include "device.h"
-#include "list"
-#include <unordered_map>
+#include <string>
+#include <thread>
+#include <map>
+#include <list>
+
+class IpManager{
+    std::map<ip_addr, std::list<string>> buffer;
+    void ReceiverFunc();
+    std::thread Receiver;
+    public: 
+    IpManager();
+    ~IpManager();
+    void SendIPPacket(std::string);
+    std::string ReceiveIPacket();
+}
+
 struct Destination{
 	in_addr ip;
 	eth_addr mac;
@@ -25,12 +39,6 @@ const Destination broadcast_addr = {
 };
 
 std::unordered_map<uint32_t, std::pair<Device, eth_addr> > mactable;
-
-struct RouteTableItem{
-    uint32_t ip;
-    uint32_t ip_mask;
-    uint32_t nxet;
-};
 
 const in_addr &GetRouteTableItem(in_addr ip);
 

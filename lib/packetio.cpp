@@ -1,6 +1,17 @@
 #include "packetio.h"
 #include "protocol.h"
-int sendFrame(const void* buf, int len, int ethtype, const eth_addr &destmac, int id){
+/** 
+ * @brief Encapsule some data into an Ethernet II frame and send it.
+ *
+ * @param buf Pointer to the payload.
+ * @param len Length of the payload.
+ * @param ethtype EtherType field value of this frame.
+ * @param destmac MAC address of the destination.
+ * @param id ID of the device(returned by `addDevice`) to send on.
+ * @return 0 on success, -1 on error.
+ * @see addDevice
+ */
+int EtherManager::sendFrame(const void* buf, int len, int ethtype, const eth_addr &destmac, int id){
 	//ethernet II  packing 
     size_t size = std::max<size_t>(sizeof(eth_header)+len+4, 64);
     std::vector<uint8_t> buffer(size, 0);

@@ -4,31 +4,33 @@
 #include <memory>
 
 static int dev_cnt;
-static std::list<std::unique_ptr<Device>> list;
 
-Device::Device(const std::string &name) :
-    name(name),
-    id(dev_cnt++) {}    
+Device::Device(const std::string &name): name(name),id(++dev_cnt),ip(),eth(){}    
 
-
-int addDevice(const std::string &name) {
-    if (findDevice(name)) return -1;
-    list.push_back(std::make_unique<Device>(name));    
-    return list.back()->id;
+Device DeviceManage::addDevice(const std::string &name) {
+    try{ 
+        Device dev = findDevice(name);
+        return dev;
+    }catch (const char* msg){
+        list.push_back(Device(name));
+        return list.back();
+    }
 }
-Device* findDevice(const std::string &name) {
+Device DeviceManage::findDevice(const std::string &name) {
 	for (auto &i : list)
-        if (i->name == name)
-            return i.get();
-    return NULL;
+        if (i.name == name)
+            return i;
+    throw "findDevice: Device Not Find!";
 }
-Device *getDevice(int id) {
+Device DeviceManage::getDevice(int id) {
+    if (id == 0) return list[0];
     for (auto &i : list)
-        if (i->id == id)
-            return i.get();
-    return NULL;
+        if (i.id == id)
+            return i;
+    throw "getDevice: Device Not Find!";
 }
-void eachDevice(const std::function<void(Device*)> &callback) {
+
+void DeviceManage::eachDevice(const std::function<void(Device)> &callback) {
     for (auto &i : list)
-        callback(i.get());
+        callback(i);
 }

@@ -1,14 +1,11 @@
 #include<stdint.h>
-#include<stdio.h>
-struct eth_hdr
-{
-    unsigned char dmac[6];
-    unsigned char smac[6];
-    uint16_t ethertype;
+struct ip_addr{
+    uint32_t s_addr;
+    ip_addr(uint32_t s_addr):s_addr(s_addr){}
 } __attribute__((packed));
 
 int main(){
-	struct eth_hdr tmp;
+	ip_addr tmp(0);
 	printf("%d\n", (int)sizeof(tmp));
 }
 
