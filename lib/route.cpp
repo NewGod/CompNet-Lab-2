@@ -23,18 +23,18 @@ void Route::routeProtoSender(bool &exit_flag){
     while (!exit_flag) { 
         size_t sz = sizeof(RTHeader) + (route_table.len()-1) * sizeof(uint32_t)*2;
         void* x = malloc(sz);
-        RTHeader *header = x;
-        header->ip = getSelfIp();
-        header->ip_mask = getSelfIpMask();
+        RTHeader *header = (RTHeader*)x;
+        header->ip = getMyIp();
+        header->ip_mask = getMyIpMask();
         header->sz = sz;
         int cnt = 1;
-        for (void* i = x + sizeof(RTHeader); i < x + sz; i+=8, cnt++){
+        for (void* i = x + sizeof(RTHeader); i < x + sz; i += 8, cnt++){
             *(int*)i = route_table[cnt].ip;
             *(int*)(i+4) = route_table[cnt].ip_mask;
         }
         DeviceManage.eachDevice([&header](Device device){
             header->mac = device.mac;
-            EtherManager.send(header, header->sz, ETHER_TEST, broadcast_mac, device);
+            EtherManager.send(header, header->sz, ETH_TYPE_TEST, broadcast_mac, device);
         });
         sleep(1);
     }

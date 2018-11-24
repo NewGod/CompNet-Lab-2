@@ -5,23 +5,22 @@
  * @brief Library supporting sending/receiving IP packets encapsuled in an 
  * Ethernet II frame.
  */
-#include "protocol.h"
 #include "device.h"
 #include <string>
 #include <thread>
 #include <map>
 #include <list>
 
-class IpManager{
-    std::map<ip_addr, std::list<string>> buffer;
+class Ip{
+    std::map<ip_addr, std::list<std::string>> buffer;
     void ReceiverFunc();
     std::thread Receiver;
     public: 
-    IpManager();
-    ~IpManager();
+    Ip();
+    ~Ip();
     void SendIPPacket(std::string);
     std::string ReceiveIPacket();
-}
+}Ip;
 
 struct Destination{
 	in_addr ip;

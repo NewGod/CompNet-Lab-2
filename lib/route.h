@@ -45,13 +45,13 @@ public:
         sender.join();
         receiver.join();
     }
-}Route;
+}Router;
 #pragma pack(push, 1) 
 struct RTHeader{ 
     ip_addr ip;
     ip_addr ip_mask;
     eth_addr mac;
-    uint8_t ttl;
+    uint8_t sz;
     uint8_t cnt;
 };
 #pragma pack(pop)

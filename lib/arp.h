@@ -1,19 +1,22 @@
 #ifndef __ARP_H__
 #define __ARP_H__
 #include<map>
-#include<lock>
+#include<mutex>
+#include<thread>
 #include "address.h"
-class ArpManager{
-    std::map<ip_addr, std::lock> ArpRequest；
-    std::map<ip_addr, eth_addr> ArpMapping;
-    void ReceiveFunc();
-    std::Thread Receiver();
-    void sendArp();
-    pubilc:
-    ArpManager();
-    ~ArpManager();
-    getMacAddr(ip_addr);
-}
+class Arp{
+    std::map<ip_addr, std::condition_variable> arpRequest;
+    std::map<ip_addr, eth_addr> arpMapping;
+    void ReceiveFunc(bool &exit_flag);
+    std::thread Receiver;
+    void sendArp(ip_addr ip);
+    bool hasArp(ip_addr ip);
+    bool exit_flag;
+    public:
+    Arp();
+    ~Arp();
+    eth_addr getMacAddr(ip_addr ip);
+};
 
 //! Ethernet hardware addresses.
 /* Copy from include/net/arp.h 

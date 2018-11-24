@@ -4,22 +4,26 @@
  * @file packetio.h
  * @brief Library supporting sending/receiving Ethernet II frames.
  */
-#include<therad>
+#include <thread>
+#include "device.h"
 
-#define ETHER_TEST 0x9000
-class EtherManager{
+class Ether{
     std::vector<void*> buffer;
     void frameReceiveFunc();
-    thread::frameReceiveMonitor;
+    std::thread frameReceiveMonitor;
 
     public:
-    EtherMAnager();
-    ~EtherManager();
-    int sendFrame(const void* buf, int len, 
-        int ethtype, const void* destmac, int id);
+    Ether();
+    ~Ether();
+    void sendFrame(const void* buf, const int &len, 
+        const int &ethtype, const eth_addr &destmac, const Device &dev);
 
     Device* receiveRT(void *buf);
     Device* receiveARP(void *buf);
     Device* receiveIP(void *buf);
-};
+}Ether;
+
+#define ETH_TYPE_ARP 0x0806
+#define ETH_TYPE_TEST 0x9000
+
 #endif
