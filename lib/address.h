@@ -15,6 +15,7 @@ struct ip_addr{
     };
     ip_addr()=default;
     ip_addr(const uint32_t &s_addr):s_addr(s_addr) {}
+    ip_addr(const int &s_addr):s_addr(s_addr) {}
     ip_addr(const void* s){
         memcpy(s_byte, s, IP_ALEN);
     }
@@ -45,5 +46,5 @@ struct eth_addr{
     }
 };
 #pragma pack(pop)
-static eth_addr broadcast_addr({"\xff\xff\xff\xff\xff\xff"});
+static eth_addr broadcast_eth("\xff\xff\xff\xff\xff\xff");
 #endif 
