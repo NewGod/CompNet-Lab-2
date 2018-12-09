@@ -4,8 +4,7 @@
  * @file device.h
  * @brief Library supporting network device management.
  */
-#include "address.h"
-#include "safequeue.h"
+#include "proto.h"
 #include "safequeue.h"
 
 #include <cstring>
@@ -14,11 +13,13 @@
 #include <string>
 #include <thread>
 #include <pcap.h>
+#include <arpa/inet.h>
+#include <netinet/ether.h>
 class Device;
 typedef std::pair<Device*, std::vector<uint8_t>> pairDevBuf;
 typedef std::vector<uint8_t> Buf;
 class Device {
-    SafeQueue<pairDevBuf> *ip, *arp, *route;
+    SafeQueue<pairDevBuf> *Ip, *Arp, *Route;
     void callback(const struct pcap_pkthdr *h, const u_char *bytes);
     void ReceiveFunc(bool &exit_flag);
     std::thread Receiver;
@@ -28,16 +29,18 @@ class Device {
     public:
     std::string name;
     int id;
-    eth_addr eth, next_hop_eth;
+    eth_addr eth;
+	ip_addr ip, ip_mask;
+	ip_addr next_hop_ip;
     Device(const std::string &name, SafeQueue<pairDevBuf> *ip, SafeQueue<pairDevBuf> *arp, SafeQueue<pairDevBuf> *route);
     ~Device();
-    void sendFrame(const void* buf, const size_t &len, 
+    void sendFrame(const eth_addr& dest, const void* buf, const size_t &len, 
         const int &ethtype);
     //std::vector<uint8_t> getFrame(int proto);
 };
 
 class DeviceManage{
-    SafeQueue<pairDevBuf> ip, arp, route;
+    SafeQueue<pairDevBuf> Ip, Arp, Route;
     void findAllDevice();
     public:
     std::vector<Device*> list;
@@ -65,5 +68,12 @@ class DeviceManage{
     pairDevBuf getIpFrame();
     pairDevBuf getArpFrame();
     pairDevBuf getRouteFrame();
-}DeviceManage;
+	bool isMyIp(const ip_addr& ip) {
+		for (auto x:list) 
+			if (x->ip == ip) return true; 
+		return false;
+	}
+};
+extern DeviceManage DeviceManager;
+
 #endif

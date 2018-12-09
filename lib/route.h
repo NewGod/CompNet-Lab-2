@@ -25,26 +25,29 @@ public:
 typedef RouteTableItem RTI;
 
 class Route{ 
-    static bool exit_flag;
-    static std::vector<RTI> route_table;
-    static void routeProtoReceiver(bool &exit_flag);
-    static void routeProtoSender(bool &exit_flag);
-    static std::thread sender;
-    static std::thread receiver;
+    bool exit_flag, run;
+    std::vector<RTI> route_table;
+    void routeProtoReceiver(bool &exit_flag);
+    void routeProtoSender(bool &exit_flag);
+    std::thread sender;
+    std::thread receiver;
+    std::mutex m; 
 public: 
     Route(){
         exit_flag = false;
+		run = 1;
         using namespace std::placeholders;
-        sender = std::thread(routeProtoSender, std::ref(exit_flag));
-        receiver = std::thread(routeProtoReceiver, std::ref(exit_flag));
-        route_table.push_back(RTI(ip_addr(0),ip_addr(0),DeviceManage.getDevice()));
+        sender = std::thread(std::bind(&Route::routeProtoSender, this, std::placeholders::_1), std::ref(exit_flag));
+        receiver = std::thread(std::bind(&Route::routeProtoReceiver, this, std::placeholders::_1), std::ref(exit_flag));
+        route_table.push_back(RTI(ip_addr(0),ip_addr(0),DeviceManager.getDevice()));
         return;
     }
-    static RTI getRTI(ip_addr &ip);
+    RTI getRTI(ip_addr &ip);
     ~Route(){
         exit_flag = true;
         sender.join();
         receiver.join();
     }
-}Router;
+};
+extern Route Router;
 #endif

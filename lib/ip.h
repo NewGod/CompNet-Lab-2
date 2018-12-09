@@ -9,19 +9,23 @@
 #include "arp.h"
 #include "route.h"
 #include "address.h"
+#include "safequeue.h"
 #include <string>
 #include <thread>
 #include <map>
 #include <list>
 
 class Ip{
-    std::map<ip_addr, std::list<std::string>> buffer;
-    void ReceiverFunc();
+	bool exit_flag;
+	SafeMap<uint16_t, Buffer> req_buf;
+	SafeQueue<Buffer> que;
+    void ReceiveFunc(bool &exit_flag);
     std::thread Receiver;
     public: 
     Ip();
     ~Ip();
-    void SendIPPacket(std::string);
+    void sendIPPacket(ip_addr, int proto, Buffer);
     std::string ReceiveIPacket();
-}Ip;
+	Buffer getPacket();
+};
 #endif

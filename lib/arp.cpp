@@ -1,38 +1,35 @@
 #include "arp.h"
 #include "address.h"
 #include "proto.h"
-#include "route.h"
 #include "device.h"
+#include <iostream>
 void Arp::sendArp(ip_addr ip){
-    Device* dev = Router.getRTI(ip).dev;
-	arp_t arp;
-	arp.arp_hard_type = ARPHRD_ETHER;
-	arp.arp_proto_type = 0x0800;
-	arp.arp_hard_size = ETH_ALEN;
-	arp.arp_proto_size = 4;
-	arp.arp_op = ARP_OP_REQUEST;
-    arp.arp_ip_source = getMyIp();
-	arp.arp_eth_source = dev->eth;
-    arp.arp_ip_dest = ip.s_addr;
-	arp.arp_eth_dest = broadcast_eth;
-    dev->sendFrame(&arp, sizeof(arp), ETH_TYPE_ARP);
-    return ; 
+	for (auto &dev : DeviceManager.list) {
+		arp_header arp;
+		arp.arp_hard_type = rev_16(ARPHRD_ETHER);
+		arp.arp_proto_type = rev_16(0x0800);
+		arp.arp_hard_size = ETH_ALEN;
+		arp.arp_proto_size = 4;
+		arp.arp_opear = rev_16(ARP_OP_REQUEST);
+		arp.arp_ip_source = dev->ip;
+		arp.arp_eth_source = dev->eth;
+		arp.arp_ip_dest = ip.s_addr;
+		arp.arp_eth_dest = broadcast_eth;
+		dev->sendFrame(broadcast_eth, &arp, sizeof(arp), ETH_TYPE_ARP);
+	}
+	return ; 
 }
-bool Arp::hasArp(ip_addr ip){
-    return arpMapping.find(ip)!=arpMapping.end();
+bool hasArp(eth_addr eth){
+    return eth != eth_null;
 }
-eth_addr Arp::getMacAddr(ip_addr ip){
-    if (arpMapping.find(ip)!=arpMapping.end()) return arpMapping[ip];
-    std::mutex mtx;
-    std::unique_lock<std::mutex> lck(mtx);
-    std::condition_variable *cv;
+eth_addr Arp::getMacAddr(const ip_addr &ip){
+	if (int(ip_addr(ip)) == 0) 
+		throw "Arp::getMacAddr error: No Ip Address";
+
+	if (hasArp(req_buf.Get(ip))) return req_buf.Get(ip);
     sendArp(ip);
 
-    if (arpRequest.find(ip)!=arpRequest.end()) cv = arpRequest[ip];
-    else cv = new std::condition_variable();
-    arpRequest[ip] = cv;
-    while (!hasArp(ip)) cv->wait(lck);
-    return arpMapping[ip];
+	return req_buf.Request(ip, hasArp);
 }
 Arp::Arp(){ 
     exit_flag = 0;
@@ -40,14 +37,19 @@ Arp::Arp(){
 }
 Arp::~Arp(){
     exit_flag = 1;
-    Receiver.detach();
+    Receiver.join();
 }
 void Arp::ReceiveFunc(bool &exit_flag){
     while (!exit_flag){
-        pairDevBuf tmp = DeviceManage.getArpFrame();
+        pairDevBuf tmp;
+		try {
+			tmp = DeviceManager.getArpFrame();
+		}catch (const char* e) {
+			continue; 
+		}
         Device* dev = tmp.first;
         Buf buf = tmp.second;
-        arp_t* hdr = (arp_t*)buf.data();
+        arp_header* hdr = (arp_header*)buf.data();
         
         bool flag = 0;
         for (auto & x : arpCache)
@@ -58,24 +60,29 @@ void Arp::ReceiveFunc(bool &exit_flag){
         if (flag) continue;
         arpCache.push_back(buf);
         if (arpCache.size() > ARP_CACHE_SIZE) arpCache.pop_front();
-        arpMapping[hdr->arp_ip_source] = hdr->arp_eth_source;
-        if (arpRequest.find(hdr->arp_ip_source) != arpRequest.end()) 
-            arpRequest[hdr->arp_ip_source]->notify_all();
-        if (hdr->arp_ip_dest == getMyIp()) {
-            arp_t arp;
-            arp.arp_hard_type = ARPHRD_ETHER;
-            arp.arp_proto_type = 0x0800;
+		req_buf.Set(hdr->arp_ip_source, hdr->arp_eth_source);
+		req_buf.Notify(hdr->arp_ip_source);
+        if (DeviceManager.isMyIp(hdr->arp_ip_dest)) {
+			if (hdr->arp_opear == rev_16(ARP_OP_REPLY)) continue;
+            arp_header arp;
+            arp.arp_hard_type = rev_16(ARPHRD_ETHER);
+            arp.arp_proto_type = rev_16(0x0800);
             arp.arp_hard_size = ETH_ALEN;
             arp.arp_proto_size = 4;
-            arp.arp_op = ARP_OP_REPLY;
-            arp.arp_ip_source = getMyIp();
+            arp.arp_opear = rev_16(ARP_OP_REPLY);
+            arp.arp_ip_source = dev->ip;
             arp.arp_eth_source = dev->eth;
             arp.arp_ip_dest = hdr->arp_ip_source;
             arp.arp_eth_dest = hdr->arp_eth_dest;
-            dev->sendFrame(&arp, sizeof(arp), ETH_TYPE_ARP);
+			eth_addr eth = broadcast_eth; // need to prevent broadcast
+            dev->sendFrame(eth, &arp, sizeof(arp), ETH_TYPE_ARP);
         }else {
-            Device* dev = Router.getRTI(hdr->arp_ip_dest).dev;
-            dev->sendFrame(hdr, sizeof(arp_t), ETH_TYPE_ARP);
+			for (auto x : DeviceManager.list) {
+				if (x != dev)
+					dev->sendFrame(broadcast_eth, hdr, sizeof(arp_header), ETH_TYPE_ARP);
+			}
         }
     }
+	return ;
 } 
+Arp Arper;
